@@ -132,7 +132,7 @@ static int load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 			/* Keep mapped - will be unmapped in pwenc_free_context */
 		}
 	}
-	
+
 	explicit_bzero(buffer, sizeof(buffer));
 
 	close(fd);
