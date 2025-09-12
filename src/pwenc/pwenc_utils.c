@@ -6,14 +6,16 @@
 #include <bsd/string.h>
 
 
-void pwenc_datum_free(pwenc_datum_t *datum)
+void pwenc_datum_free(pwenc_datum_t *datum, bool zero_data)
 {
 	if (!datum) {
 		return;
 	}
 
 	if (datum->data && datum->size > 0) {
-		explicit_bzero(datum->data, datum->size);
+		if (zero_data) {
+			explicit_bzero(datum->data, datum->size);
+		}
 		free(datum->data);
 	}
 

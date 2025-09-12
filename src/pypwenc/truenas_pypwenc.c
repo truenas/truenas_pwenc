@@ -78,7 +78,7 @@ py_pwenc_ctx_encrypt(py_pwenc_ctx_t *self, PyObject *args)
 	}
 
 	result = PyBytes_FromStringAndSize((char *)data_out_datum.data, data_out_datum.size);
-	pwenc_datum_free(&data_out_datum);
+	pwenc_datum_free(&data_out_datum, false);
 
 	return result;
 }
@@ -124,7 +124,7 @@ py_pwenc_ctx_decrypt(py_pwenc_ctx_t *self, PyObject *args)
 	}
 
 	result = PyBytes_FromStringAndSize((char *)data_out_datum.data, data_out_datum.size);
-	pwenc_datum_free(&data_out_datum);
+	pwenc_datum_free(&data_out_datum, false);
 
 	return result;
 }

@@ -4,6 +4,13 @@ import pytest
 import truenas_pypwenc
 
 
+@pytest.fixture(scope="session", autouse=True)
+def ensure_data_directory():
+    """Ensure /data directory exists for tests."""
+    if not os.path.exists("/data"):
+        os.mkdir("/data")
+
+
 def test_basic_encryption_decryption():
     """Test basic encrypt/decrypt functionality."""
     ctx = truenas_pypwenc.get_context(create=True)

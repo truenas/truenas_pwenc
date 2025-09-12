@@ -1,4 +1,4 @@
-truenas-pwenc (0.1.0-1) unstable; urgency=medium
+truenas-pwenc (0.1.0-1) bookworm; urgency=medium
 
   * Initial release.
   * Add C library for TrueNAS pwenc functionality.

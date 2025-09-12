@@ -86,14 +86,16 @@ void pwenc_close(pwenc_ctx_t *ctx);
 const char *pwenc_get_secret_path(pwenc_ctx_t *ctx);
 
 /*
- * @brief securely free a pwenc_datum_t
+ * @brief free a pwenc_datum_t
  *
- * This function zeros the data buffer, frees it, and zeros the struct.
+ * This function frees the data buffer and zeros the struct.
+ * Optionally zeros the data buffer before freeing for secure cleanup.
  * It is safe to call this function with a NULL or already-freed datum.
  *
  * @param[in,out]	datum - pointer to datum to free
+ * @param[in]		zero_data - if true, zero data buffer before freeing
  */
-void pwenc_datum_free(pwenc_datum_t *datum);
+void pwenc_datum_free(pwenc_datum_t *datum, bool zero_data);
 
 /*
  * @brief encrypt data using AES-256-CTR and encode as base64

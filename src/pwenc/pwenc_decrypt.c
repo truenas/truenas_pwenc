@@ -135,7 +135,7 @@ int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	}
 
 	if (decoded_datum.size < PWENC_NONCE_SIZE) {
-		pwenc_datum_free(&decoded_datum);
+		pwenc_datum_free(&decoded_datum, false);
 		pwenc_set_error(error, "decoded data too short");
 		return PWENC_ERROR_INVALID_INPUT;
 	}
@@ -146,7 +146,7 @@ int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 		decoded_datum.size - PWENC_NONCE_SIZE, &plaintext, &plaintext_len,
 		error);
 
-	pwenc_datum_free(&decoded_datum);
+	pwenc_datum_free(&decoded_datum, false);
 
 	if (ret != PWENC_SUCCESS) {
 		return ret;
