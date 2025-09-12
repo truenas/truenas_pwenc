@@ -43,15 +43,14 @@ static int base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	return PWENC_SUCCESS;
 }
 
-static int do_decrypt(pwenc_ctx_t *ctx, const unsigned char *nonce,
-	const unsigned char *ciphertext, size_t ciphertext_len,
-	unsigned char **plaintext_out, size_t *plaintext_len_out,
+static int do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
+	const pwenc_datum_t *ciphertext, pwenc_datum_t *plaintext_out,
 	pwenc_error_t *error)
 {
 	EVP_CIPHER_CTX *cipher_ctx = NULL;
-	unsigned char *plaintext = NULL;
+	pwenc_datum_t plaintext = {0};
 	unsigned char iv[16] = {0};
-	int len, plaintext_len, ret = PWENC_SUCCESS;
+	int len, ret = PWENC_SUCCESS;
 
 	cipher_ctx = EVP_CIPHER_CTX_new();
 	if (!cipher_ctx) {
@@ -59,7 +58,7 @@ static int do_decrypt(pwenc_ctx_t *ctx, const unsigned char *nonce,
 		return PWENC_ERROR_CRYPTO;
 	}
 
-	memcpy(iv, nonce, PWENC_NONCE_SIZE);
+	memcpy(iv, nonce->data, nonce->size);
 
 	if (EVP_DecryptInit_ex(cipher_ctx, EVP_aes_256_ctr(), NULL, ctx->secret_mem,
 	    iv) != 1) {
@@ -69,50 +68,47 @@ static int do_decrypt(pwenc_ctx_t *ctx, const unsigned char *nonce,
 		goto cleanup;
 	}
 
-	plaintext = calloc(1, ciphertext_len);
-	if (!plaintext) {
+	plaintext.data = calloc(1, ciphertext->size + EVP_CIPHER_block_size(EVP_aes_256_ctr()));
+	if (!plaintext.data) {
 		pwenc_set_error(error, "calloc() failed");
 		ret = PWENC_ERROR_MEMORY;
 		goto cleanup;
 	}
 
-	if (EVP_DecryptUpdate(cipher_ctx, plaintext, &len, ciphertext,
-	    ciphertext_len) != 1) {
+	if (EVP_DecryptUpdate(cipher_ctx, plaintext.data, &len, ciphertext->data,
+	    ciphertext->size) != 1) {
 		pwenc_set_error(error, "EVP_DecryptUpdate() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
 
-	plaintext_len = len;
+	plaintext.size = len;
 
-	if (EVP_DecryptFinal_ex(cipher_ctx, plaintext + len, &len) != 1) {
+	if (EVP_DecryptFinal_ex(cipher_ctx, plaintext.data + len, &len) != 1) {
 		pwenc_set_error(error, "EVP_DecryptFinal_ex() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
 
-	plaintext_len += len;
+	plaintext.size += len;
 
 	*plaintext_out = plaintext;
-	*plaintext_len_out = plaintext_len;
+	plaintext.data = NULL;
 
 cleanup:
 	EVP_CIPHER_CTX_free(cipher_ctx);
-	if (ret != PWENC_SUCCESS) {
-		free(plaintext);
-	}
+	pwenc_datum_free(&plaintext, true);
 	return ret;
 }
 
 int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
-	unsigned char *plaintext;
-	unsigned char nonce[PWENC_NONCE_SIZE];
-	size_t plaintext_len;
+	pwenc_datum_t nonce = {0};
 	pwenc_datum_t decoded_datum = {0};
+	pwenc_datum_t ciphertext = {0};
 	int ret;
 
 	if (!ctx || !PWENC_DATUM_VALID(data_in) || !data_out) {
@@ -143,19 +139,24 @@ int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 		return PWENC_ERROR_INVALID_INPUT;
 	}
 
-	memcpy(nonce, decoded_datum.data, PWENC_NONCE_SIZE);
-
-	ret = do_decrypt(ctx, nonce, decoded_datum.data + PWENC_NONCE_SIZE,
-		decoded_datum.size - PWENC_NONCE_SIZE, &plaintext, &plaintext_len,
-		error);
-
-	pwenc_datum_free(&decoded_datum, false);
-
-	if (ret != PWENC_SUCCESS) {
-		return ret;
+	/* Extract nonce from decoded data */
+	nonce.size = PWENC_NONCE_SIZE;
+	nonce.data = malloc(PWENC_NONCE_SIZE);
+	if (!nonce.data) {
+		pwenc_datum_free(&decoded_datum, false);
+		pwenc_set_error(error, "malloc() failed for nonce");
+		return PWENC_ERROR_MEMORY;
 	}
+	memcpy(nonce.data, decoded_datum.data, PWENC_NONCE_SIZE);
 
-	data_out->data = plaintext;
-	data_out->size = plaintext_len;
-	return PWENC_SUCCESS;
+	/* Setup ciphertext datum pointing to encrypted portion */
+	ciphertext.data = decoded_datum.data + PWENC_NONCE_SIZE;
+	ciphertext.size = decoded_datum.size - PWENC_NONCE_SIZE;
+
+	ret = do_decrypt(ctx, &nonce, &ciphertext, data_out, error);
+
+	pwenc_datum_free(&decoded_datum, true);
+	pwenc_datum_free(&nonce, false);
+
+	return ret;
 }
