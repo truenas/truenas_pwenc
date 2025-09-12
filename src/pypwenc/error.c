@@ -31,6 +31,8 @@ const char *pwenc_error_code_to_string(int code)
 		return "PWENC_ERROR_IO";
 	case PWENC_ERROR_SECRET_NOT_FOUND:
 		return "PWENC_ERROR_SECRET_NOT_FOUND";
+	case PWENC_ERROR_PAYLOAD_TOO_LARGE:
+		return "PWENC_ERROR_PAYLOAD_TOO_LARGE";
 	default:
 		return "PWENC_ERROR_UNKNOWN";
 	}

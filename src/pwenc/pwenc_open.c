@@ -75,7 +75,7 @@ cleanup:
 }
 
 static int load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
-	int *memfd_out, int flags, pwenc_error_t *error)
+	int *memfd_out, pwenc_error_t *error)
 {
 	int fd, memfd, ret = PWENC_SUCCESS;
 	unsigned char buffer[PWENC_BLOCK_SIZE];
@@ -101,7 +101,7 @@ static int load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 		return PWENC_ERROR_IO;
 	}
 
-	memfd = syscall(SYS_memfd_secret, flags & PWENC_OPEN_CLOEXEC);
+	memfd = syscall(SYS_memfd_secret, 0);
 	if (memfd < 0) {
 		pwenc_set_error(error, "memfd_secret() failed: %s",
 			strerror(errno));
@@ -157,15 +157,14 @@ int pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error)
 	*created = false;
 	ctx->memfd = -1;
 
-	ret = load_secret_to_memfd(ctx, ctx->secret_path, &ctx->memfd, flags,
-		error);
+	ret = load_secret_to_memfd(ctx, ctx->secret_path, &ctx->memfd, error);
 	if (ret == PWENC_ERROR_SECRET_NOT_FOUND &&
 	    (flags & PWENC_OPEN_CREATE)) {
 		ret = generate_secret_file(ctx->secret_path, error);
 		if (ret == PWENC_SUCCESS) {
 			*created = true;
 			ret = load_secret_to_memfd(ctx, ctx->secret_path,
-				&ctx->memfd, flags, error);
+				&ctx->memfd, error);
 		}
 	}
 
