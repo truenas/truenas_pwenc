@@ -60,6 +60,8 @@ static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 	}
 
 	memcpy(iv, nonce->data, nonce->size);
+	/* Set counter to 1 (big-endian) for middleware compatibility */
+	iv[15] = 1;
 
 	if (EVP_DecryptInit_ex(cipher_ctx, EVP_aes_256_ctr(), NULL, ctx->secret_mem,
 	    iv) != 1) {
