@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <bsd/string.h>
 
-#define PWENC_PADDING_CHAR '{'
 
 static unsigned char *pwenc_create_nonce(pwenc_error_t *error)
 {
@@ -118,6 +117,12 @@ int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	if (!ctx || ctx->secret_mem == NULL || !PWENC_DATUM_VALID(data_in) || !data_out) {
 		pwenc_set_error(error, "invalid input parameters");
 		return PWENC_ERROR_INVALID_INPUT;
+	}
+
+	if (data_in->size > PWENC_MAX_PAYLOAD_SIZE) {
+		pwenc_set_error(error, "payload size %zu exceeds maximum of %d bytes",
+			data_in->size, PWENC_MAX_PAYLOAD_SIZE);
+		return PWENC_ERROR_PAYLOAD_TOO_LARGE;
 	}
 
 	nonce = pwenc_create_nonce(error);

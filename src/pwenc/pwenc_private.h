@@ -39,6 +39,13 @@ void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
 	((datum) != NULL && (datum)->data != NULL && (datum)->size > 0)
 
 /*
+ * Maximum base64-encoded size for PWENC_MAX_PAYLOAD_SIZE + nonce
+ * Base64 encodes (PWENC_MAX_PAYLOAD_SIZE + PWENC_NONCE_SIZE) bytes to roughly 4/3 that size
+ */
+#define PWENC_MAX_ENCODED_SIZE \
+	(((PWENC_MAX_PAYLOAD_SIZE + PWENC_NONCE_SIZE + 2) / 3) * 4)
+
+/*
  * @brief encode data as base64
  *
  * @param[in]	error - error struct for error reporting (may be NULL)

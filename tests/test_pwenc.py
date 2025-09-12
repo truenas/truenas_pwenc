@@ -141,3 +141,48 @@ def test_large_data_encryption():
 
     assert decrypted == test_data
     assert len(decrypted) == 10240
+
+
+def test_payload_size_limit_encrypt():
+    """Test that payloads larger than 1 MiB are rejected during encryption."""
+    ctx = truenas_pypwenc.get_context(create=True)
+
+    # Create data larger than 1 MiB (1024 * 1024 bytes)
+    large_data = b"x" * (1024 * 1024 + 1)
+
+    with pytest.raises(Exception) as exc_info:
+        ctx.encrypt(large_data)
+
+    # Check that the error message mentions payload size
+    assert "payload size" in str(exc_info.value).lower() or "exceeds maximum" in str(exc_info.value).lower()
+
+
+def test_payload_size_limit_decrypt():
+    """Test that base64 data representing payloads larger than 1 MiB are rejected during decryption."""
+    ctx = truenas_pypwenc.get_context(create=True)
+
+    # Create a base64 string that would decode to more than 1 MiB + nonce size
+    # Base64 encoding ratio is roughly 4:3, so we need > ((1024*1024 + 8) * 4/3) chars
+    max_encoded_size = ((1024 * 1024 + 8 + 2) // 3) * 4
+    large_base64_data = b"A" * (max_encoded_size + 1)
+
+    with pytest.raises(Exception) as exc_info:
+        ctx.decrypt(large_base64_data)
+
+    # Check that the error message mentions size limits
+    assert "exceeds maximum" in str(exc_info.value).lower() or "payload" in str(exc_info.value).lower()
+
+
+def test_max_payload_size_encrypt():
+    """Test that exactly 1 MiB of data can be encrypted successfully."""
+    ctx = truenas_pypwenc.get_context(create=True)
+
+    # Create exactly 1 MiB of test data
+    test_data = b"x" * (1024 * 1024)
+
+    # This should work without raising an exception
+    encrypted = ctx.encrypt(test_data)
+    decrypted = ctx.decrypt(encrypted)
+
+    assert decrypted == test_data
+    assert len(decrypted) == 1024 * 1024

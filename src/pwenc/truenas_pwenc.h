@@ -9,12 +9,14 @@
 
 #define PWENC_BLOCK_SIZE 32
 #define PWENC_NONCE_SIZE 8
+#define PWENC_MAX_PAYLOAD_SIZE (1024 * 1024)  /* 1 MiB */
 #define PWENC_SUCCESS 0
 #define PWENC_ERROR_INVALID_INPUT -1
 #define PWENC_ERROR_MEMORY -2
 #define PWENC_ERROR_CRYPTO -3
 #define PWENC_ERROR_IO -4
 #define PWENC_ERROR_SECRET_NOT_FOUND -5
+#define PWENC_ERROR_PAYLOAD_TOO_LARGE -6
 
 #define PWENC_OPEN_EXISTING 0
 #define PWENC_OPEN_CREATE O_CREAT
@@ -101,8 +103,7 @@ void pwenc_datum_free(pwenc_datum_t *datum, bool zero_data);
  * @brief encrypt data using AES-256-CTR and encode as base64
  *
  * This function encrypts the input data using AES-256-CTR with a random
- * 8-byte nonce, applies PKCS#7-style padding, and encodes the result
- * as a base64 string.
+ * 8-byte nonce. The base64 string encodes the nonce and encrypted result.
  *
  * @param[in]	ctx - initialized context
  * @param[in]	data_in - input data to encrypt
@@ -118,7 +119,7 @@ int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
  * @brief decrypt base64-encoded data using AES-256-CTR
  *
  * This function decodes the base64 input, extracts the nonce, and
- * decrypts the data using AES-256-CTR, removing padding.
+ * decrypts the data using AES-256-CTR.
  *
  * @param[in]	ctx - initialized context
  * @param[in]	data_in - base64-encoded input string datum

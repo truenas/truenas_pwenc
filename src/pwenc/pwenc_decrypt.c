@@ -115,6 +115,7 @@ int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	unsigned char *plaintext;
 	unsigned char nonce[PWENC_NONCE_SIZE];
 	size_t plaintext_len;
+	pwenc_datum_t decoded_datum = {0};
 	int ret;
 
 	if (!ctx || !PWENC_DATUM_VALID(data_in) || !data_out) {
@@ -127,7 +128,12 @@ int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 		return PWENC_ERROR_INVALID_INPUT;
 	}
 
-	pwenc_datum_t decoded_datum = {0};
+	/* Check if base64-encoded data could exceed maximum payload size */
+	if (data_in->size > PWENC_MAX_ENCODED_SIZE) {
+		pwenc_set_error(error, "encoded data size %zu exceeds maximum for %d byte payload",
+			data_in->size, PWENC_MAX_PAYLOAD_SIZE);
+		return PWENC_ERROR_PAYLOAD_TOO_LARGE;
+	}
 
 	ret = base64_decode(error, data_in, &decoded_datum);
 	if (ret != PWENC_SUCCESS) {
