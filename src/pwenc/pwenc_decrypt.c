@@ -2,11 +2,8 @@
 #include "truenas_pwenc.h"
 #include "pwenc_private.h"
 
-#include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <bsd/string.h>
 
 static int base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,

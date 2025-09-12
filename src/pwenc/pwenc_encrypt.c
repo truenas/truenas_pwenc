@@ -2,10 +2,8 @@
 #include "truenas_pwenc.h"
 #include "pwenc_private.h"
 
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <bsd/string.h>
 
 
