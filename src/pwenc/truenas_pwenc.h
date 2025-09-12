@@ -23,6 +23,8 @@
 
 #define PWENC_DEFAULT_SECRET_PATH "/data/pwenc_secret"
 
+typedef int pwenc_resp_t;
+
 typedef struct pwenc_ctx pwenc_ctx_t;
 
 typedef struct {
@@ -66,7 +68,7 @@ void pwenc_free_context(pwenc_ctx_t *ctx);
  *
  * @return	PWENC_SUCCESS on success, error code on failure
  */
-int pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error);
+pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error);
 
 /*
  * @brief close and cleanup a password encryption context
@@ -112,7 +114,7 @@ void pwenc_datum_free(pwenc_datum_t *datum, bool zero_data);
  *
  * @return	PWENC_SUCCESS on success, error code on failure
  */
-int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
+pwenc_resp_t pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error);
 
 /*
@@ -128,7 +130,7 @@ int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
  *
  * @return	PWENC_SUCCESS on success, error code on failure
  */
-int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
+pwenc_resp_t pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error);
 
 #endif

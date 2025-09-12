@@ -22,12 +22,12 @@ void pwenc_datum_free(pwenc_datum_t *datum, bool zero_data)
 	explicit_bzero(datum, sizeof(*datum));
 }
 
-int base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
+pwenc_resp_t base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out)
 {
 	char *encoded;
 	size_t encoded_len;
-	int ret;
+	pwenc_resp_t ret;
 
 	if (!PWENC_DATUM_VALID(data_in) || !data_out) {
 		pwenc_set_error(error, "invalid input parameters");

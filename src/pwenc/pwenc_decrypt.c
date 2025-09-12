@@ -6,7 +6,7 @@
 #include <string.h>
 #include <bsd/string.h>
 
-static int base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
+static pwenc_resp_t base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out)
 {
 	unsigned char *decoded;
@@ -43,14 +43,15 @@ static int base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	return PWENC_SUCCESS;
 }
 
-static int do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
+static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 	const pwenc_datum_t *ciphertext, pwenc_datum_t *plaintext_out,
 	pwenc_error_t *error)
 {
 	EVP_CIPHER_CTX *cipher_ctx = NULL;
 	pwenc_datum_t plaintext = {0};
 	unsigned char iv[16] = {0};
-	int len, ret = PWENC_SUCCESS;
+	pwenc_resp_t ret = PWENC_SUCCESS;
+	int len;
 
 	cipher_ctx = EVP_CIPHER_CTX_new();
 	if (!cipher_ctx) {
@@ -103,13 +104,13 @@ cleanup:
 	return ret;
 }
 
-int pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
+pwenc_resp_t pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
 	pwenc_datum_t nonce = {0};
 	pwenc_datum_t decoded_datum = {0};
 	pwenc_datum_t ciphertext = {0};
-	int ret;
+	pwenc_resp_t ret;
 
 	if (!ctx || !PWENC_DATUM_VALID(data_in) || !data_out) {
 		pwenc_set_error(error, "invalid input");

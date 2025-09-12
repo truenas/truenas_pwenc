@@ -16,7 +16,7 @@ PyDoc_STRVAR(py_pwenc_error__doc__,
 "    human-readable error description\n"
 );
 
-const char *pwenc_error_code_to_string(int code)
+const char *pwenc_error_code_to_string(pwenc_resp_t code)
 {
 	switch (code) {
 	case PWENC_SUCCESS:
@@ -59,7 +59,7 @@ PyObject *setup_pwenc_exception(void)
 
 
 void
-set_exc_from_pwenc(PyObject *module_ref, int code, pwenc_error_t *pwenc_err, const char *additional_info)
+set_exc_from_pwenc(PyObject *module_ref, pwenc_resp_t code, pwenc_error_t *pwenc_err, const char *additional_info)
 {
 	PyObject *v = NULL;
 	PyObject *args = NULL;

@@ -56,7 +56,7 @@ void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
  *
  * @note	the output string is NOT null-terminated
  */
-int base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
+pwenc_resp_t base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out);
 
 #endif
