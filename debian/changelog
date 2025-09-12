@@ -1,0 +1,7 @@
+truenas-pwenc (0.1.0-1) unstable; urgency=medium
+
+  * Initial release.
+  * Add C library for TrueNAS pwenc functionality.
+  * Add Python bindings for encrypt/decrypt operations.
+
+ -- TrueNAS Engineering <dev@truenas.com>  Thu, 11 Sep 2025 17:00:00 +0000

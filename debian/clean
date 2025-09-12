@@ -1,0 +1,4 @@
+build/*
+obj/*
+lib/*
+src/*.so

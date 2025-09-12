@@ -1,0 +1,36 @@
+# Build artifacts
+build/
+obj/
+lib/
+*.so
+*.so.*
+*.o
+*.a
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+venv/
+.venv/
+
+# Debian packaging artifacts
+debian/tmp/
+debian/.debhelper/
+debian/files
+debian/*debhelper*
+debian/*.log
+debian/*.substvars
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db

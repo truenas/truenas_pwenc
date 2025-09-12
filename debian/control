@@ -1,0 +1,36 @@
+Source: truenas-pwenc
+Section: contrib/libs
+Priority: optional
+Maintainer: TrueNAS Engineering <dev@truenas.com>
+Build-Depends: debhelper-compat (= 12),
+               dh-python,
+               libssl-dev,
+               libbsd-dev,
+               pybuild-plugin-pyproject,
+               python3-all-dev,
+               python3-setuptools
+Standards-Version: 4.4.1
+Homepage: https://github.com/truenas/truenas_pwenc
+
+Package: libtruenas-pwenc1
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: TrueNAS pwenc library - C library
+ Provides API to encrypt and decrypt using the TrueNAS server pwenc secret.
+
+Package: libtruenas-pwenc-dev
+Architecture: any
+Section: libdevel
+Depends: ${misc:Depends}, libtruenas-pwenc1 (= ${binary:Version})
+Description: TrueNAS pwenc library - development files
+ Development files for the TrueNAS pwenc library that provides API to
+ encrypt and decrypt using the TrueNAS server pwenc secret.
+
+Package: python3-truenas-pwenc
+Architecture: any
+Section: contrib/python
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python3:Depends},
+         libtruenas-pwenc1 (= ${binary:Version})
+Description: TrueNAS pwenc library - Python bindings
+ Python bindings that provide API to encrypt and decrypt using the
+ TrueNAS server pwenc secret.
