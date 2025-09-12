@@ -7,43 +7,47 @@
 #include <bsd/string.h>
 
 
-static unsigned char *pwenc_create_nonce(pwenc_error_t *error)
+static int pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *error)
 {
-	unsigned char *nonce;
-
-	nonce = malloc(PWENC_NONCE_SIZE);
-	if (!nonce) {
+	nonce->data = malloc(PWENC_NONCE_SIZE);
+	if (!nonce->data) {
 		pwenc_set_error(error, "malloc() failed for nonce");
-		return NULL;
+		return PWENC_ERROR_MEMORY;
 	}
 
-	if (RAND_bytes(nonce, PWENC_NONCE_SIZE) != 1) {
+	if (RAND_bytes(nonce->data, PWENC_NONCE_SIZE) != 1) {
 		pwenc_set_error(error, "RAND_bytes() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
-		free(nonce);
-		return NULL;
+		free(nonce->data);
+		nonce->data = NULL;
+		return PWENC_ERROR_CRYPTO;
 	}
 
-	return nonce;
+	nonce->size = PWENC_NONCE_SIZE;
+	return PWENC_SUCCESS;
 }
 
 static int do_encrypt(const unsigned char *secret,
-	const unsigned char *nonce, const pwenc_datum_t *data_in,
+	const pwenc_datum_t *nonce, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
 	EVP_CIPHER_CTX *cipher_ctx = NULL;
-	unsigned char *encrypted = NULL;
-	unsigned char *nonce_encrypted = NULL;
+	pwenc_datum_t nonce_encrypted = {0};
 	unsigned char iv[16] = {0};
-	size_t encrypted_len, nonce_encrypted_len;
 	int ret = PWENC_SUCCESS, len, final_len;
+	size_t encrypted_len;
 
-	encrypted = calloc(1, data_in->size);
-	if (!encrypted) {
-		pwenc_set_error(error, "calloc() failed for encryption");
+	/* Allocate buffer for nonce + encrypted data (add extra space for potential final block) */
+	nonce_encrypted.size = nonce->size + data_in->size + EVP_CIPHER_block_size(EVP_aes_256_ctr());
+	nonce_encrypted.data = calloc(1, nonce_encrypted.size);
+	if (!nonce_encrypted.data) {
+		pwenc_set_error(error, "calloc() failed for nonce+encrypted");
 		ret = PWENC_ERROR_MEMORY;
 		goto cleanup;
 	}
+
+	/* Copy nonce to the beginning of the buffer */
+	memcpy(nonce_encrypted.data, nonce->data, nonce->size);
 
 	cipher_ctx = EVP_CIPHER_CTX_new();
 	if (!cipher_ctx) {
@@ -52,7 +56,7 @@ static int do_encrypt(const unsigned char *secret,
 		goto cleanup;
 	}
 
-	memcpy(iv, nonce, PWENC_NONCE_SIZE);
+	memcpy(iv, nonce->data, nonce->size);
 
 	if (!EVP_EncryptInit_ex2(cipher_ctx, EVP_aes_256_ctr(), secret, iv, NULL)) {
 		pwenc_set_error(error, "EVP_EncryptInit_ex() failed: %s",
@@ -61,7 +65,8 @@ static int do_encrypt(const unsigned char *secret,
 		goto cleanup;
 	}
 
-	if (!EVP_EncryptUpdate(cipher_ctx, encrypted, &len, data_in->data, data_in->size)) {
+	/* Encrypt directly into the buffer after the nonce */
+	if (!EVP_EncryptUpdate(cipher_ctx, nonce_encrypted.data + nonce->size, &len, data_in->data, data_in->size)) {
 		pwenc_set_error(error, "EVP_EncryptUpdate() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
 		ret = PWENC_ERROR_CRYPTO;
@@ -69,7 +74,7 @@ static int do_encrypt(const unsigned char *secret,
 	}
 	encrypted_len = len;
 
-	if (EVP_EncryptFinal_ex(cipher_ctx, encrypted + len, &final_len) != 1) {
+	if (EVP_EncryptFinal_ex(cipher_ctx, nonce_encrypted.data + nonce->size + len, &final_len) != 1) {
 		pwenc_set_error(error, "EVP_EncryptFinal_ex() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
 		ret = PWENC_ERROR_CRYPTO;
@@ -77,31 +82,17 @@ static int do_encrypt(const unsigned char *secret,
 	}
 	encrypted_len += final_len;
 
-	nonce_encrypted_len = PWENC_NONCE_SIZE + encrypted_len;
-	nonce_encrypted = calloc(1, nonce_encrypted_len);
-	if (!nonce_encrypted) {
-		pwenc_set_error(error, "calloc() failed for nonce+encrypted");
-		ret = PWENC_ERROR_MEMORY;
-		goto cleanup;
-	}
+	/* Update the actual size with the real encrypted length */
+	nonce_encrypted.size = nonce->size + encrypted_len;
 
-	memcpy(nonce_encrypted, nonce, PWENC_NONCE_SIZE);
-	memcpy(nonce_encrypted + PWENC_NONCE_SIZE, encrypted, encrypted_len);
-
-	pwenc_datum_t nonce_encrypted_datum = {
-		.data = nonce_encrypted,
-		.size = nonce_encrypted_len
-	};
-
-	ret = base64_encode(error, &nonce_encrypted_datum, data_out);
+	ret = base64_encode(error, &nonce_encrypted, data_out);
 	if (ret != PWENC_SUCCESS) {
 		goto cleanup;
 	}
 
 cleanup:
 	EVP_CIPHER_CTX_free(cipher_ctx);
-	free(encrypted);
-	free(nonce_encrypted);
+	pwenc_datum_free(&nonce_encrypted, true);
 
 	return ret;
 }
@@ -109,7 +100,7 @@ cleanup:
 int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
-	unsigned char *nonce = NULL;
+	pwenc_datum_t nonce = {0};
 	int ret = PWENC_SUCCESS;
 
 	if (!ctx || ctx->secret_mem == NULL || !PWENC_DATUM_VALID(data_in) || !data_out) {
@@ -123,16 +114,15 @@ int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 		return PWENC_ERROR_PAYLOAD_TOO_LARGE;
 	}
 
-	nonce = pwenc_create_nonce(error);
-	if (!nonce) {
-		ret = PWENC_ERROR_CRYPTO;
+	ret = pwenc_create_nonce(&nonce, error);
+	if (ret != PWENC_SUCCESS) {
 		goto cleanup;
 	}
 
-	ret = do_encrypt(ctx->secret_mem, nonce, data_in, data_out, error);
+	ret = do_encrypt(ctx->secret_mem, &nonce, data_in, data_out, error);
 
 cleanup:
-	free(nonce);
+	pwenc_datum_free(&nonce, false);
 
 	return ret;
 }
