@@ -60,7 +60,7 @@ py_pwenc_ctx_encrypt(py_pwenc_ctx_t *self, PyObject *args)
 	pwenc_datum_t data_out_datum = {0};
 	pwenc_error_t error = {0};
 	PyObject *result;
-	int ret;
+	pwenc_resp_t ret;
 
 	if (!PyArg_ParseTuple(args, "y#", &data_in, &data_in_len))
 		return NULL;
@@ -106,7 +106,7 @@ py_pwenc_ctx_decrypt(py_pwenc_ctx_t *self, PyObject *args)
 	pwenc_datum_t data_out_datum = {0};
 	pwenc_error_t error = {0};
 	PyObject *result;
-	int ret;
+	pwenc_resp_t ret;
 
 	if (!PyArg_ParseTuple(args, "y#", &data_in, &data_in_len))
 		return NULL;
@@ -229,7 +229,7 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 	int flags = PWENC_OPEN_EXISTING;
 	int create = 0;
 	pwenc_error_t error = {0};
-	int ret;
+	pwenc_resp_t ret;
 
 	static char *kwlist[] = {"create", NULL};
 

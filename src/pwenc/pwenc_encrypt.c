@@ -7,7 +7,7 @@
 #include <bsd/string.h>
 
 
-static int pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *error)
+static pwenc_resp_t pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *error)
 {
 	nonce->data = malloc(PWENC_NONCE_SIZE);
 	if (!nonce->data) {
@@ -27,14 +27,15 @@ static int pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *error)
 	return PWENC_SUCCESS;
 }
 
-static int do_encrypt(const unsigned char *secret,
+static pwenc_resp_t do_encrypt(const unsigned char *secret,
 	const pwenc_datum_t *nonce, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
 	EVP_CIPHER_CTX *cipher_ctx = NULL;
 	pwenc_datum_t nonce_encrypted = {0};
 	unsigned char iv[16] = {0};
-	int ret = PWENC_SUCCESS, len, final_len;
+	pwenc_resp_t ret = PWENC_SUCCESS;
+	int len, final_len;
 	size_t encrypted_len;
 
 	/* Allocate buffer for nonce + encrypted data (add extra space for potential final block) */
@@ -97,11 +98,11 @@ cleanup:
 	return ret;
 }
 
-int pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
+pwenc_resp_t pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {
 	pwenc_datum_t nonce = {0};
-	int ret = PWENC_SUCCESS;
+	pwenc_resp_t ret = PWENC_SUCCESS;
 
 	if (!ctx || ctx->secret_mem == NULL || !PWENC_DATUM_VALID(data_in) || !data_out) {
 		pwenc_set_error(error, "invalid input parameters");

@@ -14,7 +14,7 @@ typedef struct {
 
 /* Error handling functions */
 PyObject *setup_pwenc_exception(void);
-const char *pwenc_error_code_to_string(int code);
-void set_exc_from_pwenc(PyObject *module_ref, int code, pwenc_error_t *pwenc_err, const char *additional_info);
+const char *pwenc_error_code_to_string(pwenc_resp_t code);
+void set_exc_from_pwenc(PyObject *module_ref, pwenc_resp_t code, pwenc_error_t *pwenc_err, const char *additional_info);
 
 #endif

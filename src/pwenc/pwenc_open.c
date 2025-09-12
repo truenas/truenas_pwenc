@@ -16,7 +16,7 @@
 
 
 
-static int generate_secret_file(const char *path, pwenc_error_t *error)
+static pwenc_resp_t generate_secret_file(const char *path, pwenc_error_t *error)
 {
 	unsigned char secret[PWENC_BLOCK_SIZE];
 	char temp_path[PATH_MAX];
@@ -74,7 +74,7 @@ cleanup:
 	return ret;
 }
 
-static int load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
+static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 	int *memfd_out, pwenc_error_t *error)
 {
 	int fd, memfd, ret = PWENC_SUCCESS;
@@ -146,9 +146,9 @@ static int load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 	return PWENC_SUCCESS;
 }
 
-int pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error)
+pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error)
 {
-	int ret;
+	pwenc_resp_t ret;
 
 	if (!ctx || !created) {
 		return PWENC_ERROR_INVALID_INPUT;
