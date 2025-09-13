@@ -5,8 +5,8 @@ Compatibility tests between the C library and middleware_legacy pwenc implementa
 import base64
 import os
 import pytest
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
+from Cryptodome.Cipher import AES
+from Cryptodome.Util import Counter
 
 import truenas_pypwenc
 
