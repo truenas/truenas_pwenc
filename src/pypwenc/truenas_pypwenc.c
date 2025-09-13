@@ -18,24 +18,6 @@ py_pwenc_ctx_dealloc(py_pwenc_ctx_t *self)
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
-static PyObject *
-py_pwenc_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-	py_pwenc_ctx_t *self;
-
-	self = (py_pwenc_ctx_t *)type->tp_alloc(type, 0);
-	if (self != NULL) {
-		self->ctx = pwenc_init_context();
-		self->created = false;
-		if (self->ctx == NULL) {
-			Py_DECREF(self);
-			PyErr_SetString(PyExc_MemoryError, "Failed to initialize pwenc context");
-			return NULL;
-		}
-	}
-
-	return (PyObject *)self;
-}
 
 PyDoc_STRVAR(py_pwenc_ctx_encrypt__doc__,
 "encrypt(data) -> bytes\n"
@@ -201,7 +183,7 @@ static PyTypeObject PwencContextType = {
 	.tp_basicsize = sizeof(py_pwenc_ctx_t),
 	.tp_itemsize = 0,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_new = py_pwenc_ctx_new,
+	.tp_new = PyType_GenericNew,
 	.tp_dealloc = (destructor)py_pwenc_ctx_dealloc,
 	.tp_repr = (reprfunc)py_pwenc_ctx_repr,
 	.tp_methods = py_pwenc_ctx_methods,
@@ -209,13 +191,16 @@ static PyTypeObject PwencContextType = {
 };
 
 PyDoc_STRVAR(get_context__doc__,
-"get_context(*, create=False) -> truenas_pypwenc.PwencContext\n"
-"-----------------------------------------------------------\n\n"
+"get_context(*, create=False, secret_path=None) -> truenas_pypwenc.PwencContext\n"
+"----------------------------------------------------------------------------\n\n"
 "Create a new PwencContext instance for encryption and decryption operations.\n\n"
 "Parameters\n"
 "----------\n"
 "create: bool, optional (default=False)\n"
-"    Whether to create a new secret file if one doesn't exist.\n\n"
+"    Whether to create a new secret file if one doesn't exist.\n"
+"secret_path: str, optional (default=None)\n"
+"    Path to secret file. If None, uses FREENAS_PWENC_SECRET environment\n"
+"    variable or falls back to /data/pwenc_secret.\n\n"
 "Returns\n"
 "-------\n"
 "truenas_pypwenc.PwencContext\n"
@@ -228,12 +213,13 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 	py_pwenc_ctx_t *ctx;
 	int flags = PWENC_OPEN_EXISTING;
 	int create = 0;
+	const char *secret_path = NULL;
 	pwenc_error_t error = {0};
 	pwenc_resp_t ret;
 
-	static char *kwlist[] = {"create", NULL};
+	static char *kwlist[] = {"create", "secret_path", NULL};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|p", kwlist, &create))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ps", kwlist, &create, &secret_path))
 		return NULL;
 
 	ctx = (py_pwenc_ctx_t *)PyObject_CallObject((PyObject *)&PwencContextType, NULL);
@@ -247,7 +233,13 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 	}
 
 	Py_BEGIN_ALLOW_THREADS
-	ret = pwenc_open(ctx->ctx, flags, &ctx->created, &error);
+	ctx->ctx = pwenc_init_context(secret_path);
+	if (ctx->ctx != NULL) {
+		ret = pwenc_open(ctx->ctx, flags, &ctx->created, &error);
+	} else {
+		ret = PWENC_ERROR_MEMORY;
+		pwenc_set_error(&error, "Failed to initialize pwenc context");
+	}
 	Py_END_ALLOW_THREADS
 
 	if (ret != PWENC_SUCCESS) {

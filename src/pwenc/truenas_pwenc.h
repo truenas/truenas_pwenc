@@ -39,9 +39,11 @@ typedef struct {
 /*
  * @brief allocate and initialize a new password encryption context
  *
+ * @param[in]	secret_path - path to secret file (if NULL, uses default)
+ *
  * @return	pointer to new context on success, NULL on failure
  */
-pwenc_ctx_t *pwenc_init_context(void);
+pwenc_ctx_t *pwenc_init_context(const char *secret_path);
 
 /*
  * @brief free a password encryption context

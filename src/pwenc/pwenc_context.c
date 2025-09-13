@@ -10,10 +10,11 @@
 #include <bsd/string.h>
 
 
-pwenc_ctx_t *pwenc_init_context(void)
+pwenc_ctx_t *pwenc_init_context(const char *secret_path)
 {
 	pwenc_ctx_t *ctx;
 	const char *env_path;
+	const char *path_to_use;
 
 	ctx = calloc(1, sizeof(*ctx));
 	if (!ctx) {
@@ -23,9 +24,15 @@ pwenc_ctx_t *pwenc_init_context(void)
 	ctx->memfd = -1;
 	ctx->secret_mem = NULL;
 
-	env_path = getenv("FREENAS_PWENC_SECRET");
-	if (strlcpy(ctx->secret_path, env_path ? env_path : PWENC_DEFAULT_SECRET_PATH,
-		    PATH_MAX) >= PATH_MAX) {
+	/* Priority: provided path > environment > default */
+	if (secret_path) {
+		path_to_use = secret_path;
+	} else {
+		env_path = getenv("FREENAS_PWENC_SECRET");
+		path_to_use = env_path ? env_path : PWENC_DEFAULT_SECRET_PATH;
+	}
+
+	if (strlcpy(ctx->secret_path, path_to_use, PATH_MAX) >= PATH_MAX) {
 		free(ctx);
 		return NULL;
 	}
