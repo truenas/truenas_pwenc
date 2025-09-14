@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <bsd/string.h>
+#include <endian.h>
 
 
 static pwenc_resp_t pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *error)
@@ -57,9 +58,10 @@ static pwenc_resp_t do_encrypt(const unsigned char *secret,
 		goto cleanup;
 	}
 
-	memcpy(iv, nonce->data, nonce->size);
 	/* Set counter to 1 (big-endian) for middleware compatibility */
-	iv[15] = 1;
+	*(uint64_t *)(iv + 8) = htobe64(LEGACY_PWENC_INIT_CTR);
+	/* Set nonce in initialization vector */
+	memcpy(iv, nonce->data, nonce->size);
 
 	if (!EVP_EncryptInit_ex2(cipher_ctx, EVP_aes_256_ctr(), secret, iv, NULL)) {
 		pwenc_set_error(error, "EVP_EncryptInit_ex() failed: %s",
