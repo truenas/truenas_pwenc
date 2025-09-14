@@ -64,4 +64,16 @@ void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
 pwenc_resp_t base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out);
 
+/*
+ * @brief decode base64 data
+ *
+ * @param[in]	error - error struct for error reporting (may be NULL)
+ * @param[in]	data_in - input base64 data to decode
+ * @param[out]	data_out - datum to receive allocated decoded data
+ *
+ * @return	PWENC_SUCCESS on success, error code on failure
+ */
+pwenc_resp_t base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
+	pwenc_datum_t *data_out);
+
 #endif
