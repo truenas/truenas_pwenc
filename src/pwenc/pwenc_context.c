@@ -10,27 +10,44 @@
 #include <bsd/string.h>
 
 
-pwenc_ctx_t *pwenc_init_context(void)
+pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwenc_error_t *error)
 {
-	pwenc_ctx_t *ctx;
+	pwenc_ctx_t *new_ctx;
 	const char *env_path;
+	const char *path_to_use;
 
-	ctx = calloc(1, sizeof(*ctx));
 	if (!ctx) {
-		return NULL;
+		pwenc_set_error(error, "Context pointer cannot be NULL");
+		return PWENC_ERROR_INVALID_INPUT;
 	}
 
-	ctx->memfd = -1;
-	ctx->secret_mem = NULL;
+	*ctx = NULL;
 
-	env_path = getenv("FREENAS_PWENC_SECRET");
-	if (strlcpy(ctx->secret_path, env_path ? env_path : PWENC_DEFAULT_SECRET_PATH,
-		    PATH_MAX) >= PATH_MAX) {
-		free(ctx);
-		return NULL;
+	new_ctx = calloc(1, sizeof(*new_ctx));
+	if (!new_ctx) {
+		pwenc_set_error(error, "Failed to allocate memory for context");
+		return PWENC_ERROR_MEMORY;
 	}
 
-	return ctx;
+	new_ctx->memfd = -1;
+	new_ctx->secret_mem = NULL;
+
+	/* Priority: provided path > environment > default */
+	if (secret_path) {
+		path_to_use = secret_path;
+	} else {
+		env_path = getenv("FREENAS_PWENC_SECRET");
+		path_to_use = env_path ? env_path : PWENC_DEFAULT_SECRET_PATH;
+	}
+
+	if (strlcpy(new_ctx->secret_path, path_to_use, PATH_MAX) >= PATH_MAX) {
+		pwenc_set_error(error, "Secret path too long (max %d characters)", PATH_MAX - 1);
+		free(new_ctx);
+		return PWENC_ERROR_INVALID_INPUT;
+	}
+
+	*ctx = new_ctx;
+	return PWENC_SUCCESS;
 }
 
 void pwenc_free_context(pwenc_ctx_t *ctx)
