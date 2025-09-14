@@ -46,6 +46,11 @@ void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
 	(((PWENC_MAX_PAYLOAD_SIZE + PWENC_NONCE_SIZE + 2) / 3) * 4)
 
 /*
+ * Initial counter value for AES-256-CTR mode (for middleware compatibility)
+ */
+#define LEGACY_PWENC_INIT_CTR 1
+
+/*
  * @brief encode data as base64
  *
  * @param[in]	error - error struct for error reporting (may be NULL)
