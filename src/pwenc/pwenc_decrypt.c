@@ -7,42 +7,6 @@
 #include <bsd/string.h>
 #include <endian.h>
 
-static pwenc_resp_t base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
-	pwenc_datum_t *data_out)
-{
-	unsigned char *decoded;
-	int decoded_len;
-
-	if (!PWENC_DATUM_VALID(data_in) || !data_out) {
-		pwenc_set_error(error, "invalid input parameters");
-		return PWENC_ERROR_INVALID_INPUT;
-	}
-
-	decoded = calloc(1, data_in->size);
-	if (!decoded) {
-		pwenc_set_error(error, "calloc() failed");
-		return PWENC_ERROR_MEMORY;
-	}
-
-	decoded_len = EVP_DecodeBlock(decoded, data_in->data, data_in->size);
-	if (decoded_len < 0) {
-		free(decoded);
-		pwenc_set_error(error, "EVP_DecodeBlock() failed");
-		return PWENC_ERROR_CRYPTO;
-	}
-
-	/* Adjust for base64 padding */
-	if (data_in->size > 0 && data_in->data[data_in->size - 1] == '=') {
-		decoded_len--;
-		if (data_in->size > 1 && data_in->data[data_in->size - 2] == '=') {
-			decoded_len--;
-		}
-	}
-
-	data_out->data = decoded;
-	data_out->size = decoded_len;
-	return PWENC_SUCCESS;
-}
 
 static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 	const pwenc_datum_t *ciphertext, pwenc_datum_t *plaintext_out,
