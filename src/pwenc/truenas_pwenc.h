@@ -40,10 +40,12 @@ typedef struct {
  * @brief allocate and initialize a new password encryption context
  *
  * @param[in]	secret_path - path to secret file (if NULL, uses default)
+ * @param[out]	ctx - pointer to receive allocated context
+ * @param[out]	error - pointer to error structure for error details
  *
- * @return	pointer to new context on success, NULL on failure
+ * @return	PWENC_SUCCESS on success, error code on failure
  */
-pwenc_ctx_t *pwenc_init_context(const char *secret_path);
+pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwenc_error_t *error);
 
 /*
  * @brief free a password encryption context

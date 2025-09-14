@@ -233,12 +233,9 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 	}
 
 	Py_BEGIN_ALLOW_THREADS
-	ctx->ctx = pwenc_init_context(secret_path);
-	if (ctx->ctx != NULL) {
+	ret = pwenc_init_context(secret_path, &ctx->ctx, &error);
+	if (ret == PWENC_SUCCESS) {
 		ret = pwenc_open(ctx->ctx, flags, &ctx->created, &error);
-	} else {
-		ret = PWENC_ERROR_MEMORY;
-		pwenc_set_error(&error, "Failed to initialize pwenc context");
 	}
 	Py_END_ALLOW_THREADS
 
