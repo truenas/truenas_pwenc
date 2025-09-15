@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #include "truenas_pwenc.h"
 #include "pwenc_private.h"
 

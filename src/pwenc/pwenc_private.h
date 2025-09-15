@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #ifndef TRUENAS_PWENC_PRIVATE_H
 #define TRUENAS_PWENC_PRIVATE_H
 
