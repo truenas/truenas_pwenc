@@ -103,6 +103,7 @@ cleanup:
 	return ret;
 }
 
+/* Encrypt the data_in and return a base64-encoded response */
 pwenc_resp_t pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {

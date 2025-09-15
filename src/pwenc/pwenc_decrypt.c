@@ -73,6 +73,11 @@ cleanup:
 	return ret;
 }
 
+/*
+ * base64 decode the provided datum_in, then return decrypted value
+ * The first 8 bytes of the decoded value is the nonce, and remaining bytes
+ * are ciphertext.
+ */
 pwenc_resp_t pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error)
 {

@@ -77,4 +77,30 @@ pwenc_resp_t base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 pwenc_resp_t base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out);
 
+/*
+ * @brief open and initialize a pwenc context
+ *
+ * This function opens the secret file and loads it into a memfd_secret for
+ * secure storage. If PWENC_OPEN_CREATE is specified and the secret file
+ * doesn't exist, a new random secret will be generated.
+ *
+ * @param[in]   ctx - pointer to context structure to initialize
+ * @param[in]   flags - PWENC_OPEN_EXISTING or PWENC_OPEN_CREATE
+ * @param[out]  created - pointer to bool that will be set to true if secret file was created
+ * @param[out]  error - pointer to error structure for error details
+ *
+ * @return      PWENC_SUCCESS on success, error code on failure
+ */
+pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error);
+
+/*
+ * @brief close and cleanup a pwenc context
+ *
+ * This function closes the memfd_secret and cleans up all resources
+ * associated with the context.
+ *
+ * @param[in]   ctx - pointer to context structure to cleanup
+ */
+void pwenc_close(pwenc_ctx_t *ctx);
+
 #endif

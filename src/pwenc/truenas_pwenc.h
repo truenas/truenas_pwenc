@@ -38,52 +38,31 @@ typedef struct {
 } pwenc_error_t;
 
 /*
- * @brief allocate and initialize a new password encryption context
+ * @brief allocate and initialize a new pwenc context
  *
  * @param[in]	secret_path - path to secret file (if NULL, uses default)
+ * @param[in]   flags - PWENC_OPEN_EXISTING or PWENC_OPEN_CREATE
  * @param[out]	ctx - pointer to receive allocated context
+ * @param[out]  created - pointer to bool that will be set to true if secret file was created
  * @param[out]	error - pointer to error structure for error details
  *
  * @return	PWENC_SUCCESS on success, error code on failure
  */
-pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwenc_error_t *error);
+pwenc_resp_t pwenc_init_context(const char *secret_path,
+				int flags,
+				pwenc_ctx_t **ctx,
+				bool *created,
+				pwenc_error_t *error);
 
 /*
- * @brief free a password encryption context
+ * @brief free a pwenc context
  *
- * This function closes any open file descriptors and frees all memory
- * associated with the context.
+ * This function calls pwenc_close() on the specified context and then
+ * frees the memory associated with the context itself.
  *
  * @param[in]	ctx - pointer to context to free (may be NULL)
  */
 void pwenc_free_context(pwenc_ctx_t *ctx);
-
-
-/*
- * @brief open and initialize a password encryption context
- *
- * This function opens the secret file and loads it into a memfd_secret for
- * secure storage. If PWENC_OPEN_CREATE is specified and the secret file
- * doesn't exist, a new random secret will be generated.
- *
- * @param[in]	ctx - pointer to context structure to initialize
- * @param[in]	flags - PWENC_OPEN_EXISTING or PWENC_OPEN_CREATE
- * @param[out]	created - pointer to bool that will be set to true if secret file was created
- * @param[out]	error - pointer to error structure for error details
- *
- * @return	PWENC_SUCCESS on success, error code on failure
- */
-pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_t *error);
-
-/*
- * @brief close and cleanup a password encryption context
- *
- * This function closes the memfd_secret and cleans up all resources
- * associated with the context.
- *
- * @param[in]	ctx - pointer to context structure to cleanup
- */
-void pwenc_close(pwenc_ctx_t *ctx);
 
 /*
  * @brief get the secret file path from a context
