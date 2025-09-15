@@ -32,8 +32,7 @@ static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 
 	if (EVP_DecryptInit_ex(cipher_ctx, EVP_aes_256_ctr(), NULL, ctx->secret_mem,
 	    iv) != 1) {
-		pwenc_set_error(error, "EVP_DecryptInit_ex() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_DecryptInit_ex() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
@@ -47,8 +46,7 @@ static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 
 	if (EVP_DecryptUpdate(cipher_ctx, plaintext.data, &len, ciphertext->data,
 	    ciphertext->size) != 1) {
-		pwenc_set_error(error, "EVP_DecryptUpdate() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_DecryptUpdate() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
@@ -56,8 +54,7 @@ static pwenc_resp_t do_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *nonce,
 	plaintext.size = len;
 
 	if (EVP_DecryptFinal_ex(cipher_ctx, plaintext.data + len, &len) != 1) {
-		pwenc_set_error(error, "EVP_DecryptFinal_ex() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_DecryptFinal_ex() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}

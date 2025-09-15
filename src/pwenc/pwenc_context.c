@@ -80,11 +80,12 @@ const char *pwenc_get_secret_path(pwenc_ctx_t *ctx)
 	return ctx->secret_path;
 }
 
-void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
-	const char *location, ...)
+void _pwenc_set_error(pwenc_error_t *error, unsigned long ssl_err_code,
+	const char *fmt, const char *location, ...)
 {
 	va_list args;
 	int offset;
+	char ssl_err_buf[256];  // temporary buffer to hold SSL error string
 
 	if (!error || !fmt) {
 		return;
@@ -93,6 +94,13 @@ void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
 	va_start(args, location);
 	offset = vsnprintf(error->message, sizeof(error->message), fmt, args);
 	va_end(args);
+
+	/* Append SSL error string if ssl_err_code is non-zero */
+	if (ssl_err_code != 0 && offset > 0 && (size_t)offset < sizeof(error->message) - 1) {
+		ERR_error_string(ssl_err_code, ssl_err_buf);
+		offset += snprintf(error->message + offset, sizeof(error->message) - offset,
+			": %s", ssl_err_buf);
+	}
 
 	if (offset > 0 && (size_t)offset < sizeof(error->message) - 1) {
 		snprintf(error->message + offset, sizeof(error->message) - offset,

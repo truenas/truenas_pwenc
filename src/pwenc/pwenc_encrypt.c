@@ -18,8 +18,7 @@ static pwenc_resp_t pwenc_create_nonce(pwenc_datum_t *nonce, pwenc_error_t *erro
 	}
 
 	if (RAND_bytes(nonce->data, PWENC_NONCE_SIZE) != 1) {
-		pwenc_set_error(error, "RAND_bytes() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "RAND_bytes() failed");
 		free(nonce->data);
 		nonce->data = NULL;
 		return PWENC_ERROR_CRYPTO;
@@ -65,24 +64,21 @@ static pwenc_resp_t do_encrypt(const unsigned char *secret,
 	memcpy(iv, nonce->data, nonce->size);
 
 	if (!EVP_EncryptInit_ex2(cipher_ctx, EVP_aes_256_ctr(), secret, iv, NULL)) {
-		pwenc_set_error(error, "EVP_EncryptInit_ex() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_EncryptInit_ex() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
 
 	/* Encrypt directly into the buffer after the nonce */
 	if (!EVP_EncryptUpdate(cipher_ctx, nonce_encrypted.data + nonce->size, &len, data_in->data, data_in->size)) {
-		pwenc_set_error(error, "EVP_EncryptUpdate() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_EncryptUpdate() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
 	encrypted_len = len;
 
 	if (EVP_EncryptFinal_ex(cipher_ctx, nonce_encrypted.data + nonce->size + len, &final_len) != 1) {
-		pwenc_set_error(error, "EVP_EncryptFinal_ex() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "EVP_EncryptFinal_ex() failed");
 		ret = PWENC_ERROR_CRYPTO;
 		goto cleanup;
 	}
