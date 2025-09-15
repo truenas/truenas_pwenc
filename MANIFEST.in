@@ -1,4 +1,2 @@
 include README.md
 include LICENSE
-recursive-include src/pwenc *.h
-recursive-include src/pypwenc *.h
