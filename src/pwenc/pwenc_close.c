@@ -3,6 +3,7 @@
 #include "pwenc_private.h"
 
 #include <unistd.h>
+#include <sys/mman.h>
 
 void pwenc_close(pwenc_ctx_t *ctx)
 {
@@ -10,8 +11,13 @@ void pwenc_close(pwenc_ctx_t *ctx)
 		return;
 	}
 
+	if (ctx->secret_mem != NULL) {
+		munmap(ctx->secret_mem, PWENC_BLOCK_SIZE);
+	}
+
 	if (ctx->memfd > 0) {
 		close(ctx->memfd);
-		ctx->memfd = -1;
 	}
+	ctx->secret_mem = NULL;
+	ctx->memfd = -1;
 }

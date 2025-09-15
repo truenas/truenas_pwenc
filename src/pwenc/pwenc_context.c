@@ -11,9 +11,12 @@
 #include <bsd/string.h>
 
 
-pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwenc_error_t *error)
+pwenc_resp_t pwenc_init_context(const char *secret_path,
+				int flags, pwenc_ctx_t **ctx,
+				bool *created, pwenc_error_t *error)
 {
 	pwenc_ctx_t *new_ctx;
+	pwenc_resp_t resp;
 	const char *env_path;
 	const char *path_to_use;
 
@@ -33,7 +36,10 @@ pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwen
 	new_ctx->memfd = -1;
 	new_ctx->secret_mem = NULL;
 
-	/* Priority: provided path > environment > default */
+	/*
+	 * For compatiblity with legacy middleware behavior we allow overriding secret
+	 * path with an environmental variable.
+	 */
 	if (secret_path) {
 		path_to_use = secret_path;
 	} else {
@@ -47,6 +53,12 @@ pwenc_resp_t pwenc_init_context(const char *secret_path, pwenc_ctx_t **ctx, pwen
 		return PWENC_ERROR_INVALID_INPUT;
 	}
 
+	resp = pwenc_open(new_ctx, flags, created, error);
+	if (resp != PWENC_SUCCESS) {
+		pwenc_free_context(new_ctx);
+		return resp;
+	}
+
 	*ctx = new_ctx;
 	return PWENC_SUCCESS;
 }
@@ -56,15 +68,7 @@ void pwenc_free_context(pwenc_ctx_t *ctx)
 	if (!ctx) {
 		return;
 	}
-
-	if (ctx->secret_mem != NULL) {
-		munmap(ctx->secret_mem, PWENC_BLOCK_SIZE);
-	}
-
-	if (ctx->memfd > 0) {
-		close(ctx->memfd);
-	}
-
+	pwenc_close(ctx);
 	free(ctx);
 }
 

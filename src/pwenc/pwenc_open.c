@@ -16,19 +16,21 @@
 #include <bsd/string.h>
 
 
-
+/* Create a pwenc secret file at the specified path with a randomized secret */
 static pwenc_resp_t generate_secret_file(const char *path, pwenc_error_t *error)
 {
 	unsigned char secret[PWENC_BLOCK_SIZE];
 	char temp_path[PATH_MAX];
 	int fd, ret = PWENC_SUCCESS;
 
+	// generate the random bytes
 	if (RAND_bytes(secret, PWENC_BLOCK_SIZE) != 1) {
 		pwenc_set_error(error, "RAND_bytes() failed: %s",
 			ERR_error_string(ERR_get_error(), NULL));
 		return PWENC_ERROR_CRYPTO;
 	}
 
+	// create a temporary file to hold them
 	if (snprintf(temp_path, PATH_MAX, "%s.XXXXXX", path) >= PATH_MAX) {
 		pwenc_set_error(error, "secret path too long: %s", path);
 		return PWENC_ERROR_INVALID_INPUT;
@@ -40,6 +42,7 @@ static pwenc_resp_t generate_secret_file(const char *path, pwenc_error_t *error)
 		return PWENC_ERROR_IO;
 	}
 
+	// write the secret to the file and make sure it's committed to disk
 	if (pwrite(fd, secret, PWENC_BLOCK_SIZE, 0) != PWENC_BLOCK_SIZE) {
 		pwenc_set_error(error, "pwrite() failed: %s", strerror(errno));
 		ret = PWENC_ERROR_IO;
@@ -54,6 +57,7 @@ static pwenc_resp_t generate_secret_file(const char *path, pwenc_error_t *error)
 
 	close(fd);
 
+	// rename over the target path
 	if (ret == PWENC_SUCCESS) {
 		if (rename(temp_path, path) < 0) {
 			pwenc_set_error(error, "rename() failed: %s",
@@ -75,6 +79,10 @@ cleanup:
 	return ret;
 }
 
+/*
+ * Load the pwenc secret at the specified path into a memfd secret stored in
+ * the provided pwenc_ctx_t
+ */
 static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 	int *memfd_out, pwenc_error_t *error)
 {
@@ -83,6 +91,7 @@ static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 	ssize_t bytes_read;
 	struct stat st;
 
+	// First open and read the secret
 	fd = open(path, O_RDONLY);
 	if (fd < 0) {
 		pwenc_set_error(error, "open() failed: %s", strerror(errno));
@@ -95,6 +104,7 @@ static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 		return PWENC_ERROR_IO;
 	}
 
+	// do a simple sanity check that the file has the expected size
 	if (st.st_size != PWENC_BLOCK_SIZE) {
 		pwenc_set_error(error, "secret file has invalid size: %ld bytes",
 			st.st_size);
@@ -102,6 +112,7 @@ static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 		return PWENC_ERROR_IO;
 	}
 
+	// Initialize the memfd_secret
 	memfd = syscall(SYS_memfd_secret, 0);
 	if (memfd < 0) {
 		pwenc_set_error(error, "memfd_secret() failed: %s",
@@ -130,7 +141,6 @@ static pwenc_resp_t load_secret_to_memfd(pwenc_ctx_t *ctx, const char *path,
 		} else {
 			memcpy(mem, buffer, PWENC_BLOCK_SIZE);
 			ctx->secret_mem = mem;
-			/* Keep mapped - will be unmapped in pwenc_free_context */
 		}
 	}
 	
