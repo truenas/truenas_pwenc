@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include "truenas_pypwenc.h"

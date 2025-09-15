@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-or-later
 #ifndef TRUENAS_PYPWENC_H
 #define TRUENAS_PYPWENC_H
 
