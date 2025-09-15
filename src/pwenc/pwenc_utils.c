@@ -44,7 +44,7 @@ pwenc_resp_t base64_encode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 
 	ret = EVP_EncodeBlock((unsigned char *)encoded, data_in->data, data_in->size);
 	if (ret < 0) {
-		pwenc_set_error(error, "EVP_EncodeBlock() failed");
+		pwenc_set_ssl_error(error, "EVP_EncodeBlock() failed to base64 encode data");
 		free(encoded);
 		return PWENC_ERROR_CRYPTO;
 	}
@@ -75,7 +75,7 @@ pwenc_resp_t base64_decode(pwenc_error_t *error, const pwenc_datum_t *data_in,
 	decoded_len = EVP_DecodeBlock(decoded, data_in->data, data_in->size);
 	if (decoded_len < 0) {
 		free(decoded);
-		pwenc_set_error(error, "EVP_DecodeBlock() failed");
+		pwenc_set_ssl_error(error, "EVP_DecodeBlock() failed to base64 decode data");
 		return PWENC_ERROR_CRYPTO;
 	}
 

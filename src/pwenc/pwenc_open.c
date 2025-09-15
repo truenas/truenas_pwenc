@@ -25,8 +25,7 @@ static pwenc_resp_t generate_secret_file(const char *path, pwenc_error_t *error)
 
 	// generate the random bytes
 	if (RAND_bytes(secret, PWENC_BLOCK_SIZE) != 1) {
-		pwenc_set_error(error, "RAND_bytes() failed: %s",
-			ERR_error_string(ERR_get_error(), NULL));
+		pwenc_set_ssl_error(error, "RAND_bytes() failed");
 		return PWENC_ERROR_CRYPTO;
 	}
 

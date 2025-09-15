@@ -20,18 +20,23 @@ struct pwenc_ctx {
  * @brief set error message in error struct with location info
  *
  * @param[in]	error - error struct to set message in (may be NULL)
+ * @param[in]	ssl_err_code - SSL error code (0 if no SSL error)
  * @param[in]	fmt - printf-style format string
+ * @param[in]	location - location string
  * @param[in]	... - format arguments
  */
-void _pwenc_set_error(pwenc_error_t *error, const char *fmt,
-	const char *location, ...);
+void _pwenc_set_error(pwenc_error_t *error, unsigned long ssl_err_code,
+	const char *fmt, const char *location, ...);
 
 #define __stringify(x) #x
 #define __stringify2(x) __stringify(x)
 #define __location__ __FILE__ ":" __stringify2(__LINE__)
 
 #define pwenc_set_error(error, fmt, ...) \
-	_pwenc_set_error(error, fmt, __location__, ##__VA_ARGS__)
+	_pwenc_set_error(error, 0, fmt, __location__, ##__VA_ARGS__)
+
+#define pwenc_set_ssl_error(error, fmt, ...) \
+	_pwenc_set_error(error, ERR_get_error(), fmt, __location__, ##__VA_ARGS__)
 
 /*
  * Macro for pwenc_datum_t validation
