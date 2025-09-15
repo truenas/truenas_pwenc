@@ -25,3 +25,7 @@ override_dh_auto_test:
 
 override_dh_install:
 	dh_install
+	# Remove source files from Python package and keep only .so
+	find debian/python3-truenas-pwenc -name "*.c" -delete
+	find debian/python3-truenas-pwenc -name "*.h" -delete
+	find debian/python3-truenas-pwenc -type d -empty -delete
