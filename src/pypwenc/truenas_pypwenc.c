@@ -313,6 +313,12 @@ PyInit_truenas_pypwenc(void)
 		return NULL;
 	}
 
+	/* Add PwencContext type */
+	if (PyModule_AddObjectRef(m, "PwencContext", (PyObject *)&PwencContextType) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+
 	/* Add module constants */
 	if (PyModule_AddStringConstant(m, "DEFAULT_SECRET_PATH", PWENC_DEFAULT_SECRET_PATH) < 0) {
 		Py_DECREF(m);
