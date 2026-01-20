@@ -17,5 +17,8 @@ truenas_pypwenc_ext = Extension(
 )
 
 setup(
-    ext_modules=[truenas_pypwenc_ext]
+    ext_modules=[truenas_pypwenc_ext],
+    packages=['truenas_pypwenc'],
+    package_dir={'truenas_pypwenc': 'stubs'},
+    package_dat={'truenas_pypwenc': ['*.pyi', 'py.typed']},
 )
