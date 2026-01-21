@@ -344,5 +344,49 @@ PyInit_truenas_pypwenc(void)
 		return NULL;
 	}
 
+	/* Add error code constants */
+	if (PyModule_AddIntConstant(m, "PWENC_SUCCESS", PWENC_SUCCESS) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_INVALID_INPUT", PWENC_ERROR_INVALID_INPUT) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_MEMORY", PWENC_ERROR_MEMORY) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_CRYPTO", PWENC_ERROR_CRYPTO) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_IO", PWENC_ERROR_IO) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_SECRET_NOT_FOUND", PWENC_ERROR_SECRET_NOT_FOUND) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_PAYLOAD_TOO_LARGE", PWENC_ERROR_PAYLOAD_TOO_LARGE) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_WATCH_FAILED", PWENC_ERROR_WATCH_FAILED) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_SECRET_RELOAD_FAILED", PWENC_ERROR_SECRET_RELOAD_FAILED) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	/* Add buffer size constant */
+	if (PyModule_AddIntConstant(m, "PWENC_BLOCK_SIZE", PWENC_BLOCK_SIZE) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+
 	return m;
 }
