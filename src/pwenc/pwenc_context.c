@@ -35,6 +35,10 @@ pwenc_resp_t pwenc_init_context(const char *secret_path,
 
 	new_ctx->memfd = -1;
 	new_ctx->secret_mem = NULL;
+	new_ctx->inotify_fd = -1;
+	new_ctx->file_watch_wd = -1;
+	new_ctx->dir_watch_wd = -1;
+	new_ctx->watching = false;
 
 	/*
 	 * For compatiblity with legacy middleware behavior we allow overriding secret
@@ -53,6 +57,35 @@ pwenc_resp_t pwenc_init_context(const char *secret_path,
 		return PWENC_ERROR_INVALID_INPUT;
 	}
 
+	/* Require absolute path for security and watch functionality */
+	if (new_ctx->secret_path[0] != '/') {
+		pwenc_set_error(error, "Secret path must be absolute (start with '/')");
+		free(new_ctx);
+		return PWENC_ERROR_INVALID_INPUT;
+	}
+
+	/* Initialize watch-related fields if watching is requested */
+	if (flags & PWENC_OPEN_WATCH) {
+		char *last_slash;
+
+		pthread_mutex_init(&new_ctx->watch_mutex, NULL);
+
+		/* Parse directory path and filename */
+		strlcpy(new_ctx->dir_path, new_ctx->secret_path, sizeof(new_ctx->dir_path));
+		last_slash = strrchr(new_ctx->dir_path, '/');
+		if (!last_slash) {
+			pwenc_set_error(error, "Secret path must be absolute (contain '/')");
+			pthread_mutex_destroy(&new_ctx->watch_mutex);
+			free(new_ctx);
+			return PWENC_ERROR_INVALID_INPUT;
+		}
+
+		/* Copy filename from position after the slash */
+		strlcpy(new_ctx->filename, last_slash + 1, sizeof(new_ctx->filename));
+		/* Null-terminate dir_path at the slash */
+		*last_slash = '\0';
+	}
+
 	resp = pwenc_open(new_ctx, flags, created, error);
 	if (resp != PWENC_SUCCESS) {
 		pwenc_free_context(new_ctx);
@@ -69,6 +102,9 @@ void pwenc_free_context(pwenc_ctx_t *ctx)
 		return;
 	}
 	pwenc_close(ctx);
+	if (ctx->watching) {
+		pthread_mutex_destroy(&ctx->watch_mutex);
+	}
 	free(ctx);
 }
 

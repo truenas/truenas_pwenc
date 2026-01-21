@@ -18,9 +18,12 @@
 #define PWENC_ERROR_IO -4
 #define PWENC_ERROR_SECRET_NOT_FOUND -5
 #define PWENC_ERROR_PAYLOAD_TOO_LARGE -6
+#define PWENC_ERROR_WATCH_FAILED -7
+#define PWENC_ERROR_SECRET_RELOAD_FAILED -8
 
 #define PWENC_OPEN_EXISTING 0
 #define PWENC_OPEN_CREATE O_CREAT
+#define PWENC_OPEN_WATCH 0x04
 
 #define PWENC_DEFAULT_SECRET_PATH "/data/pwenc_secret"
 
@@ -116,5 +119,14 @@ pwenc_resp_t pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
  */
 pwenc_resp_t pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t *data_out, pwenc_error_t *error);
+
+/*
+ * @brief check if inotify watching is active on a context
+ *
+ * @param[in]	ctx - initialized context
+ *
+ * @return	true if watching is active, false otherwise
+ */
+bool pwenc_is_watching(pwenc_ctx_t *ctx);
 
 #endif

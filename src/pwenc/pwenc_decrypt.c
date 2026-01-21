@@ -100,6 +100,16 @@ pwenc_resp_t pwenc_decrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 		return PWENC_ERROR_PAYLOAD_TOO_LARGE;
 	}
 
+	/* Check for secret updates if watching is enabled */
+	if (ctx->watching) {
+		pthread_mutex_lock(&ctx->watch_mutex);
+		ret = pwenc_check_and_reload(ctx, error);
+		pthread_mutex_unlock(&ctx->watch_mutex);
+		if (ret != PWENC_SUCCESS) {
+			return ret;
+		}
+	}
+
 	ret = base64_decode(error, data_in, &decoded_datum);
 	if (ret != PWENC_SUCCESS) {
 		return ret;

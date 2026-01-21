@@ -5,6 +5,7 @@
 #include "truenas_pwenc.h"
 #include <limits.h>
 #include <sys/param.h>
+#include <pthread.h>
 
 #include <openssl/rand.h>
 #include <openssl/err.h>
@@ -14,6 +15,19 @@ struct pwenc_ctx {
 	int memfd;
 	void *secret_mem;
 	char secret_path[PATH_MAX];
+
+	// inotify state (only if PWENC_OPEN_WATCH was set)
+	int inotify_fd;              // -1 when not watching
+	int file_watch_wd;           // Watch descriptor for the file itself
+	int dir_watch_wd;            // Watch descriptor for parent directory
+	char dir_path[PATH_MAX];     // Parent directory path
+	char filename[NAME_MAX + 1]; // Just the filename (basename)
+
+	// Mutex for checking and reloading (only used if watching)
+	pthread_mutex_t watch_mutex;
+
+	// State flags
+	bool watching;               // True when watch is active (immutable after init)
 };
 
 /*
@@ -107,5 +121,41 @@ pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_
  * @param[in]   ctx - pointer to context structure to cleanup
  */
 void pwenc_close(pwenc_ctx_t *ctx);
+
+/*
+ * @brief setup inotify watch on secret file
+ *
+ * This function creates an inotify instance and sets up watches on both
+ * the secret file itself (inode-level) and its parent directory (path-level)
+ * to catch rename-over operations.
+ *
+ * @param[in]   ctx - pointer to context structure
+ * @param[out]  error - pointer to error structure for error details
+ *
+ * @return      PWENC_SUCCESS on success, PWENC_ERROR_WATCH_FAILED on failure
+ */
+pwenc_resp_t pwenc_setup_watch(pwenc_ctx_t *ctx, pwenc_error_t *error);
+
+/*
+ * @brief cleanup inotify watch
+ *
+ * This function removes inotify watches and closes the inotify file descriptor.
+ *
+ * @param[in]   ctx - pointer to context structure
+ */
+void pwenc_cleanup_watch(pwenc_ctx_t *ctx);
+
+/*
+ * @brief check for file changes and reload secret if necessary
+ *
+ * This function reads inotify events (non-blocking) and reloads the secret
+ * in-place if the file has been deleted, moved, or modified.
+ *
+ * @param[in]   ctx - pointer to context structure
+ * @param[out]  error - pointer to error structure for error details
+ *
+ * @return      PWENC_SUCCESS on success, error code on failure
+ */
+pwenc_resp_t pwenc_check_and_reload(pwenc_ctx_t *ctx, pwenc_error_t *error);
 
 #endif

@@ -44,6 +44,11 @@ class PwencContext:
         """Path to the secret file used by this context"""
         ...
 
+    @property
+    def watching(self) -> bool:
+        """True if inotify watching is active on the secret file"""
+        ...
+
     def encrypt(self, data: bytes) -> bytes:
         """
         Encrypt data using AES-256-CTR and encode as base64.
@@ -89,6 +94,7 @@ class PwencContext:
 def get_context(
     *,
     create: bool = False,
+    watch: bool = False,
     secret_path: Optional[str] = None
 ) -> PwencContext:
     """
@@ -98,6 +104,11 @@ def get_context(
     ----------
     create : bool, optional
         Whether to create a new secret file if one doesn't exist.
+        Default is False.
+    watch : bool, optional
+        Whether to enable inotify watching on the secret file for automatic
+        reload on changes. When enabled, encrypt/decrypt will check for file
+        changes and reload the secret transparently.
         Default is False.
     secret_path : str, optional
         Path to secret file. If None, uses FREENAS_PWENC_SECRET environment
