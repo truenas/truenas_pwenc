@@ -129,6 +129,12 @@ py_pwenc_ctx_get_path(py_pwenc_ctx_t *self, void *closure)
 }
 
 static PyObject *
+py_pwenc_ctx_get_watching(py_pwenc_ctx_t *self, void *closure)
+{
+	return Py_NewRef(pwenc_is_watching(self->ctx) ? Py_True : Py_False);
+}
+
+static PyObject *
 py_pwenc_ctx_repr(py_pwenc_ctx_t *self)
 {
 	const char *path = pwenc_get_secret_path(self->ctx);
@@ -148,6 +154,11 @@ static PyGetSetDef py_pwenc_ctx_getsetters[] = {
 		.name = "path",
 		.get = (getter)py_pwenc_ctx_get_path,
 		.doc = "Path to the secret file used by this context"
+	},
+	{
+		.name = "watching",
+		.get = (getter)py_pwenc_ctx_get_watching,
+		.doc = "True if inotify watching is active on the secret file"
 	},
 	{NULL}
 };
@@ -192,13 +203,17 @@ static PyTypeObject PwencContextType = {
 };
 
 PyDoc_STRVAR(get_context__doc__,
-"get_context(*, create=False, secret_path=None) -> truenas_pypwenc.PwencContext\n"
-"----------------------------------------------------------------------------\n\n"
+"get_context(*, create=False, watch=False, secret_path=None) -> truenas_pypwenc.PwencContext\n"
+"-------------------------------------------------------------------------------------------\n\n"
 "Create a new PwencContext instance for encryption and decryption operations.\n\n"
 "Parameters\n"
 "----------\n"
 "create: bool, optional (default=False)\n"
 "    Whether to create a new secret file if one doesn't exist.\n"
+"watch: bool, optional (default=False)\n"
+"    Whether to enable inotify watching on the secret file for automatic\n"
+"    reload on changes. When enabled, encrypt/decrypt will check for file\n"
+"    changes and reload the secret transparently.\n"
 "secret_path: str, optional (default=None)\n"
 "    Path to secret file. If None, uses FREENAS_PWENC_SECRET environment\n"
 "    variable or falls back to /data/pwenc_secret.\n\n"
@@ -214,13 +229,14 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 	py_pwenc_ctx_t *ctx;
 	int flags = PWENC_OPEN_EXISTING;
 	int create = 0;
+	int watch = 0;
 	const char *secret_path = NULL;
 	pwenc_error_t error = {0};
 	pwenc_resp_t ret;
 
-	static char *kwlist[] = {"create", "secret_path", NULL};
+	static char *kwlist[] = {"create", "watch", "secret_path", NULL};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ps", kwlist, &create, &secret_path))
+	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|pps", kwlist, &create, &watch, &secret_path))
 		return NULL;
 
 	ctx = (py_pwenc_ctx_t *)PyObject_CallObject((PyObject *)&PwencContextType, NULL);
@@ -231,6 +247,9 @@ get_context(PyObject *self, PyObject *args, PyObject *kwds)
 
 	if (create) {
 		flags |= PWENC_OPEN_CREATE;
+	}
+	if (watch) {
+		flags |= PWENC_OPEN_WATCH;
 	}
 
 	Py_BEGIN_ALLOW_THREADS
@@ -321,6 +340,50 @@ PyInit_truenas_pypwenc(void)
 
 	/* Add module constants */
 	if (PyModule_AddStringConstant(m, "DEFAULT_SECRET_PATH", PWENC_DEFAULT_SECRET_PATH) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	/* Add error code constants */
+	if (PyModule_AddIntConstant(m, "PWENC_SUCCESS", PWENC_SUCCESS) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_INVALID_INPUT", PWENC_ERROR_INVALID_INPUT) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_MEMORY", PWENC_ERROR_MEMORY) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_CRYPTO", PWENC_ERROR_CRYPTO) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_IO", PWENC_ERROR_IO) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_SECRET_NOT_FOUND", PWENC_ERROR_SECRET_NOT_FOUND) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_PAYLOAD_TOO_LARGE", PWENC_ERROR_PAYLOAD_TOO_LARGE) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_WATCH_FAILED", PWENC_ERROR_WATCH_FAILED) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+	if (PyModule_AddIntConstant(m, "PWENC_ERROR_SECRET_RELOAD_FAILED", PWENC_ERROR_SECRET_RELOAD_FAILED) < 0) {
+		Py_DECREF(m);
+		return NULL;
+	}
+
+	/* Add buffer size constant */
+	if (PyModule_AddIntConstant(m, "PWENC_BLOCK_SIZE", PWENC_BLOCK_SIZE) < 0) {
 		Py_DECREF(m);
 		return NULL;
 	}

@@ -11,6 +11,10 @@ void pwenc_close(pwenc_ctx_t *ctx)
 		return;
 	}
 
+	if (ctx->watching) {
+		pwenc_cleanup_watch(ctx);
+	}
+
 	if (ctx->secret_mem != NULL) {
 		munmap(ctx->secret_mem, PWENC_BLOCK_SIZE);
 	}

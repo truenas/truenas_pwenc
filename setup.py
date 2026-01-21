@@ -10,7 +10,8 @@ truenas_pypwenc_ext = Extension(
         'src/pwenc/pwenc_close.c',
         'src/pwenc/pwenc_encrypt.c',
         'src/pwenc/pwenc_decrypt.c',
-        'src/pwenc/pwenc_utils.c'
+        'src/pwenc/pwenc_utils.c',
+        'src/pwenc/pwenc_watch.c'
     ],
     include_dirs=['src/pwenc', 'src/pypwenc'],
     libraries=['ssl', 'crypto', 'bsd']

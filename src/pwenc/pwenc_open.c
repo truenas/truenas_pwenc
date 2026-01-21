@@ -178,5 +178,10 @@ pwenc_resp_t pwenc_open(pwenc_ctx_t *ctx, int flags, bool *created, pwenc_error_
 		}
 	}
 
+	/* Setup inotify watch if requested and secret was loaded successfully */
+	if ((ret == PWENC_SUCCESS) && (flags & PWENC_OPEN_WATCH)) {
+		ret = pwenc_setup_watch(ctx, error);
+	}
+
 	return ret;
 }

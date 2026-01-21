@@ -34,6 +34,10 @@ const char *pwenc_error_code_to_string(pwenc_resp_t code)
 		return "PWENC_ERROR_SECRET_NOT_FOUND";
 	case PWENC_ERROR_PAYLOAD_TOO_LARGE:
 		return "PWENC_ERROR_PAYLOAD_TOO_LARGE";
+	case PWENC_ERROR_WATCH_FAILED:
+		return "PWENC_ERROR_WATCH_FAILED";
+	case PWENC_ERROR_SECRET_RELOAD_FAILED:
+		return "PWENC_ERROR_SECRET_RELOAD_FAILED";
 	default:
 		return "PWENC_ERROR_UNKNOWN";
 	}

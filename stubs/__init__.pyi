@@ -7,9 +7,38 @@ stored in memfd_secret for enhanced security.
 
 from typing import Optional
 
-__all__ = ['PwencContext', 'PwencError', 'get_context', 'DEFAULT_SECRET_PATH']
+__all__ = [
+    'PwencContext',
+    'PwencError',
+    'get_context',
+    'DEFAULT_SECRET_PATH',
+    'PWENC_SUCCESS',
+    'PWENC_ERROR_INVALID_INPUT',
+    'PWENC_ERROR_MEMORY',
+    'PWENC_ERROR_CRYPTO',
+    'PWENC_ERROR_IO',
+    'PWENC_ERROR_SECRET_NOT_FOUND',
+    'PWENC_ERROR_PAYLOAD_TOO_LARGE',
+    'PWENC_ERROR_WATCH_FAILED',
+    'PWENC_ERROR_SECRET_RELOAD_FAILED',
+    'PWENC_BLOCK_SIZE',
+]
 
 DEFAULT_SECRET_PATH: str
+
+# Error codes
+PWENC_SUCCESS: int
+PWENC_ERROR_INVALID_INPUT: int
+PWENC_ERROR_MEMORY: int
+PWENC_ERROR_CRYPTO: int
+PWENC_ERROR_IO: int
+PWENC_ERROR_SECRET_NOT_FOUND: int
+PWENC_ERROR_PAYLOAD_TOO_LARGE: int
+PWENC_ERROR_WATCH_FAILED: int
+PWENC_ERROR_SECRET_RELOAD_FAILED: int
+
+# Buffer size constants
+PWENC_BLOCK_SIZE: int
 
 class PwencError(RuntimeError):
     """
@@ -42,6 +71,11 @@ class PwencContext:
     @property
     def path(self) -> Optional[str]:
         """Path to the secret file used by this context"""
+        ...
+
+    @property
+    def watching(self) -> bool:
+        """True if inotify watching is active on the secret file"""
         ...
 
     def encrypt(self, data: bytes) -> bytes:
@@ -89,6 +123,7 @@ class PwencContext:
 def get_context(
     *,
     create: bool = False,
+    watch: bool = False,
     secret_path: Optional[str] = None
 ) -> PwencContext:
     """
@@ -98,6 +133,11 @@ def get_context(
     ----------
     create : bool, optional
         Whether to create a new secret file if one doesn't exist.
+        Default is False.
+    watch : bool, optional
+        Whether to enable inotify watching on the secret file for automatic
+        reload on changes. When enabled, encrypt/decrypt will check for file
+        changes and reload the secret transparently.
         Default is False.
     secret_path : str, optional
         Path to secret file. If None, uses FREENAS_PWENC_SECRET environment
