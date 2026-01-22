@@ -64,10 +64,10 @@ def test_watch_file_renamed_over(secret_path):
     decrypted_by_new = ctx_new.decrypt(encrypted2)
     assert decrypted_by_new == test_data
 
-    # encrypted1 (from old secret) should NOT be decryptable anymore
-    # This will fail because the secret changed
-    with pytest.raises(Exception):
-        ctx.decrypt(encrypted1)
+    # encrypted1 (from old secret) should NOT be decryptable correctly anymore
+    # AES-CTR doesn't have authentication, so decrypting with wrong key produces garbage
+    decrypted_garbage = ctx.decrypt(encrypted1)
+    assert decrypted_garbage != test_data  # Should produce garbage, not original data
 
 
 def test_watch_file_renamed(secret_path):
@@ -145,9 +145,10 @@ def test_watch_file_modified(secret_path):
     decrypted_by_new = ctx_new.decrypt(encrypted2)
     assert decrypted_by_new == test_data
 
-    # Old encrypted data should no longer decrypt
-    with pytest.raises(Exception):
-        ctx.decrypt(encrypted1)
+    # Old encrypted data should no longer decrypt correctly
+    # AES-CTR doesn't have authentication, so decrypting with wrong key produces garbage
+    decrypted_garbage = ctx.decrypt(encrypted1)
+    assert decrypted_garbage != test_data  # Should produce garbage, not original data
 
 
 def test_watch_no_reload_when_file_unchanged(secret_path):
@@ -185,3 +186,127 @@ def test_watch_decrypt_after_reload(secret_path):
     # Original context should now be able to decrypt data encrypted with new secret
     decrypted = ctx.decrypt(encrypted_new)
     assert decrypted == test_data
+
+
+def test_watch_persists_after_reload(secret_path):
+    """Test that watch state persists after secret reload (regression test for EBADF bug)."""
+    # Create initial secret and context with watch
+    ctx = truenas_pypwenc.get_context(create=True, watch=True, secret_path=secret_path)
+    assert ctx.watching is True
+
+    # Encrypt some data with original secret
+    test_data = b"Test data"
+    encrypted1 = ctx.encrypt(test_data)
+    assert ctx.watching is True  # Should still be watching after encrypt
+
+    # Generate a new secret file and atomically replace the old one
+    temp_secret = secret_path + ".new"
+    ctx_new = truenas_pypwenc.get_context(create=True, watch=False, secret_path=temp_secret)
+    os.rename(temp_secret, secret_path)
+
+    # Trigger reload by doing an encrypt operation
+    encrypted2 = ctx.encrypt(test_data)
+
+    # Critical: watch state should still be true after reload
+    assert ctx.watching is True
+
+    # And it should continue to work for subsequent operations (would get EBADF if watch fd was closed)
+    encrypted3 = ctx.encrypt(test_data)
+    decrypted3 = ctx.decrypt(encrypted3)
+    assert decrypted3 == test_data
+
+    # Verify watching is still active
+    assert ctx.watching is True
+
+
+def test_watch_multiple_sequential_reloads(secret_path):
+    """Test that multiple sequential secret reloads work correctly (regression test for EBADF bug)."""
+    # Create initial secret and context with watch
+    ctx = truenas_pypwenc.get_context(create=True, watch=True, secret_path=secret_path)
+    assert ctx.watching is True
+
+    test_data = b"Test data for multiple reloads"
+
+    # Perform multiple reload cycles
+    for i in range(5):
+        # Generate a new secret
+        temp_secret = secret_path + f".new{i}"
+        ctx_new = truenas_pypwenc.get_context(create=True, watch=False, secret_path=temp_secret)
+
+        # Atomically replace old secret with new secret
+        os.rename(temp_secret, secret_path)
+
+        # Encrypt with the original context - should trigger reload and work
+        encrypted = ctx.encrypt(test_data)
+
+        # Verify watch is still active after each reload
+        assert ctx.watching is True, f"Watch should be active after reload {i}"
+
+        # Verify we can decrypt with the new secret
+        decrypted = ctx.decrypt(encrypted)
+        assert decrypted == test_data
+
+        # Verify encryption by new context matches
+        encrypted_by_new = ctx_new.encrypt(test_data)
+        decrypted_cross = ctx.decrypt(encrypted_by_new)
+        assert decrypted_cross == test_data
+
+
+def test_watch_continuous_operations_after_reload(secret_path):
+    """Test continuous encrypt/decrypt operations after reload (regression test for EBADF bug)."""
+    # Create initial secret and context with watch
+    ctx = truenas_pypwenc.get_context(create=True, watch=True, secret_path=secret_path)
+    assert ctx.watching is True
+
+    test_data = b"Test data for continuous operations"
+
+    # Do some initial operations
+    for i in range(3):
+        encrypted = ctx.encrypt(test_data)
+        decrypted = ctx.decrypt(encrypted)
+        assert decrypted == test_data
+
+    # Replace the secret
+    temp_secret = secret_path + ".new"
+    ctx_new = truenas_pypwenc.get_context(create=True, watch=False, secret_path=temp_secret)
+    os.rename(temp_secret, secret_path)
+
+    # Trigger reload
+    encrypted = ctx.encrypt(test_data)
+    assert ctx.watching is True
+
+    # Now do many operations - if watch fd was closed but watching flag was still true,
+    # we would get EBADF errors here
+    for i in range(10):
+        encrypted = ctx.encrypt(test_data + str(i).encode())
+        decrypted = ctx.decrypt(encrypted)
+        assert decrypted == test_data + str(i).encode()
+
+    # Verify watch is still active
+    assert ctx.watching is True
+
+
+def test_watch_reload_then_second_reload(secret_path):
+    """Test that a second reload works correctly after the first (regression test for EBADF bug)."""
+    # Create initial secret and context with watch
+    ctx = truenas_pypwenc.get_context(create=True, watch=True, secret_path=secret_path)
+
+    test_data = b"Test data"
+
+    # First reload
+    temp_secret1 = secret_path + ".new1"
+    ctx_new1 = truenas_pypwenc.get_context(create=True, watch=False, secret_path=temp_secret1)
+    os.rename(temp_secret1, secret_path)
+    encrypted1 = ctx.encrypt(test_data)  # Triggers first reload
+    assert ctx.watching is True
+
+    # Second reload - this is where the bug would manifest
+    temp_secret2 = secret_path + ".new2"
+    ctx_new2 = truenas_pypwenc.get_context(create=True, watch=False, secret_path=temp_secret2)
+    os.rename(temp_secret2, secret_path)
+
+    # This should work without EBADF error
+    encrypted2 = ctx.encrypt(test_data)  # Triggers second reload
+    decrypted2 = ctx.decrypt(encrypted2)
+    assert decrypted2 == test_data
+    assert ctx.watching is True

@@ -45,11 +45,9 @@ static pwenc_resp_t pwenc_reload_secret(pwenc_ctx_t *ctx, pwenc_error_t *error)
 	pwenc_resp_t ret;
 	bool created;
 
-	// Clean up old secret
 	pwenc_close(ctx);
 
-	// Load new secret using existing open function
-	ret = pwenc_open(ctx, PWENC_OPEN_EXISTING, &created, error);
+	ret = pwenc_open(ctx, PWENC_OPEN_EXISTING | PWENC_OPEN_WATCH, &created, error);
 	if (ret != PWENC_SUCCESS) {
 		return PWENC_ERROR_SECRET_RELOAD_FAILED;
 	}
