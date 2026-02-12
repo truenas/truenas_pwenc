@@ -106,7 +106,9 @@ pwenc_resp_t pwenc_encrypt(pwenc_ctx_t *ctx, const pwenc_datum_t *data_in,
 	pwenc_datum_t nonce = {0};
 	pwenc_resp_t ret = PWENC_SUCCESS;
 
-	if (!ctx || ctx->secret_mem == NULL || !PWENC_DATUM_VALID(data_in) || !data_out) {
+	/* Validate input parameters. Note: we allow empty strings (size == 0) for encryption,
+	 * as they may be needed for cases like storing placeholder values in databases. */
+	if (!ctx || ctx->secret_mem == NULL || !data_in || !data_in->data || !data_out) {
 		pwenc_set_error(error, "invalid input parameters");
 		return PWENC_ERROR_INVALID_INPUT;
 	}
