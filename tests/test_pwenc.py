@@ -42,12 +42,20 @@ def test_encrypt_decrypt_various_data(test_data):
     assert decrypted == test_data
 
 
-def test_empty_data_raises_exception():
-    """Test that empty data raises an exception."""
+def test_empty_data_encryption():
+    """Test that empty data can be encrypted and decrypted.
+
+    Empty strings are allowed for encryption to support use cases like
+    storing placeholder values in databases (e.g., revoked API keys).
+    """
     ctx = truenas_pypwenc.get_context(create=True)
 
-    with pytest.raises(Exception):
-        ctx.encrypt(b"")
+    encrypted = ctx.encrypt(b"")
+    assert isinstance(encrypted, bytes)
+    assert len(encrypted) > 0  # Should have nonce + base64 encoding
+
+    decrypted = ctx.decrypt(encrypted)
+    assert decrypted == b""
 
 
 def test_context_attributes():
