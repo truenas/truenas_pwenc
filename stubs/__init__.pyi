@@ -5,24 +5,7 @@ This module provides AES-256-CTR encryption/decryption using secrets
 stored in memfd_secret for enhanced security.
 """
 
-from typing import Optional
-
-__all__ = [
-    'PwencContext',
-    'PwencError',
-    'get_context',
-    'DEFAULT_SECRET_PATH',
-    'PWENC_SUCCESS',
-    'PWENC_ERROR_INVALID_INPUT',
-    'PWENC_ERROR_MEMORY',
-    'PWENC_ERROR_CRYPTO',
-    'PWENC_ERROR_IO',
-    'PWENC_ERROR_SECRET_NOT_FOUND',
-    'PWENC_ERROR_PAYLOAD_TOO_LARGE',
-    'PWENC_ERROR_WATCH_FAILED',
-    'PWENC_ERROR_SECRET_RELOAD_FAILED',
-    'PWENC_BLOCK_SIZE',
-]
+from typing import Optional, final
 
 DEFAULT_SECRET_PATH: str
 
@@ -54,6 +37,7 @@ class PwencError(RuntimeError):
     code: int
     message: str
 
+@final
 class PwencContext:
     """
     Context for pwenc encryption and decryption operations.
