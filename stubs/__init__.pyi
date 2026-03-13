@@ -78,7 +78,7 @@ class PwencContext:
         """True if inotify watching is active on the secret file"""
         ...
 
-    def encrypt(self, data: bytes) -> bytes:
+    def encrypt(self, data: bytes, /) -> bytes:
         """
         Encrypt data using AES-256-CTR and encode as base64.
 
@@ -99,7 +99,7 @@ class PwencContext:
         """
         ...
 
-    def decrypt(self, data: bytes) -> bytes:
+    def decrypt(self, data: bytes, /) -> bytes:
         """
         Decrypt base64-encoded data using AES-256-CTR.
 
@@ -121,7 +121,6 @@ class PwencContext:
         ...
 
 def get_context(
-    *,
     create: bool = False,
     watch: bool = False,
     secret_path: Optional[str] = None

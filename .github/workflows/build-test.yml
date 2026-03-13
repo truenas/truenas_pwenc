@@ -20,7 +20,7 @@ jobs:
         apt update
         apt install -y libssl-dev libbsd-dev python3-dev build-essential devscripts debhelper
         apt install -y debhelper dh-python pybuild-plugin-pyproject python3-pytest python3-all-dev
-        apt install -y python3-pip python3-setuptools python3-build python3-pycryptodome
+        apt install -y python3-pip python3-setuptools python3-build python3-pycryptodome python3-mypy
 
     - name: Test Debian package build
       run: |
@@ -32,3 +32,11 @@ jobs:
         dpkg -i ../libtruenas-pwenc-dev_*.deb
         dpkg -i ../python3-truenas-pwenc_*.deb
         python3 -m pytest tests/ -v
+
+    - name: Run stub checks
+      run: |
+        # Check stubs are internally self-consistent
+        python3 -m mypy stubs/
+
+        # Check stubs match the installed C extension runtime.
+        python3 -m mypy.stubtest truenas_pypwenc
